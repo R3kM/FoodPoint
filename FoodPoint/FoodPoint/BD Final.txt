@@ -1,0 +1,192 @@
+CREATE DATABASE foodpoint;
+USE foodpoint;
+
+-- Tabela de clientes
+CREATE TABLE clientes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(100) NOT NULL,
+    cpf CHAR(11) UNIQUE,
+    telefone VARCHAR(15) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    logradouro VARCHAR(150),
+    numero VARCHAR(10),
+    complemento VARCHAR(50),
+    bairro VARCHAR(80),
+    cidade VARCHAR(80),
+    uf CHAR(2),
+    cep CHAR(8),
+    senha VARCHAR(255) NOT NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de vendedores
+CREATE TABLE vendedores (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome_responsavel VARCHAR(100) NOT NULL,
+    cpf_cnpj VARCHAR(14) NOT NULL UNIQUE,
+    tipo_documento ENUM('CPF', 'CNPJ') NOT NULL,
+    telefone VARCHAR(15) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    nome_empresa VARCHAR(150) NOT NULL,
+    tipo_negocio ENUM('salgados', 'marmita', 'doces', 'bebidas', 'pastelaria', 'lanches', 'sorvetes', 'outro') NOT NULL DEFAULT 'outro',
+    logo_url VARCHAR(500),
+    descricao_loja TEXT,
+    logradouro VARCHAR(150),
+    numero VARCHAR(10),
+    complemento VARCHAR(50),
+    bairro VARCHAR(80) NOT NULL,
+    cidade VARCHAR(80) NOT NULL,
+    uf CHAR(2) NOT NULL,
+    cep CHAR(8),
+    horario_funcionamento JSON,
+    chave_pix VARCHAR(150),
+    tipo_chave_pix ENUM('cpf', 'cnpj', 'email', 'telefone', 'aleatoria'),
+    instagram VARCHAR(100),
+    facebook VARCHAR(100),
+    whatsapp_link VARCHAR(200),
+    verificado TINYINT(1) DEFAULT 0,
+    tempo_medio_preparo SMALLINT UNSIGNED,
+    total_vendas INT UNSIGNED DEFAULT 0,
+    plano ENUM('gratuito', 'premium') DEFAULT 'gratuito',
+    destaque TINYINT(1) DEFAULT 0,
+    senha VARCHAR(255) NOT NULL,
+    ativo TINYINT(1) DEFAULT 1,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de categorias
+CREATE TABLE categorias (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nome VARCHAR(80) NOT NULL UNIQUE,
+    descricao VARCHAR(255),
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Tabela de produtos
+CREATE TABLE produtos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vendedor_id INT NOT NULL,
+    categoria_id INT,
+    nome VARCHAR(150) NOT NULL,
+    descricao TEXT NOT NULL,
+    preco DECIMAL(10, 2) NOT NULL CHECK (preco >= 0),
+    imagem_url VARCHAR(500),
+    horario_disponivel VARCHAR(20),
+    quantidade_inicial INT UNSIGNED NOT NULL DEFAULT 0,
+    quantidade_vendida INT UNSIGNED NOT NULL DEFAULT 0,
+    alerta_estoque_baixo INT UNSIGNED DEFAULT 3,
+    esgotado TINYINT(1) DEFAULT 0,
+    ativo TINYINT(1) DEFAULT 1,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_produto_vendedor FOREIGN KEY (vendedor_id)
+        REFERENCES vendedores(id)
+        ON DELETE CASCADE
+        ON UPDATE CASCADE,
+    CONSTRAINT fk_produto_categoria FOREIGN KEY (categoria_id)
+        REFERENCES categorias(id)
+        ON DELETE SET NULL
+);
+
+-- Tabela para Chat de Conversa
+CREATE TABLE conversas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    vendedor_id INT NOT NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vendedor_id) REFERENCES vendedores(id)
+);
+
+CREATE TABLE mensagens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    conversa_id INT NOT NULL,
+    remetente_tipo ENUM('cliente', 'vendedor') NOT NULL,
+    remetente_id INT NOT NULL,
+    conteudo TEXT NOT NULL,
+    lida TINYINT(1) DEFAULT 0,
+    enviado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (conversa_id) REFERENCES conversas(id)
+);
+
+-- Tabela de pedidos
+CREATE TABLE pedidos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    vendedor_id INT NOT NULL,
+    status ENUM('pendente', 'confirmado', 'em_preparo', 'pronto_retirada', 'entregue', 'cancelado') DEFAULT 'pendente',
+    tipo_entrega ENUM('retirada', 'entrega') DEFAULT 'retirada',
+    horario_retirada DATETIME,
+    total DECIMAL(10, 2) NOT NULL,
+    comissao_percentual DECIMAL(5, 2) DEFAULT 0.00,
+    comissao_valor DECIMAL(10, 2) DEFAULT 0.00,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    atualizado_em DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vendedor_id) REFERENCES vendedores(id)
+);
+
+-- Itens do pedido (quais produtos foram comprados)
+CREATE TABLE pedido_itens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pedido_id INT NOT NULL,
+    produto_id INT NOT NULL,
+    quantidade INT NOT NULL CHECK (quantidade > 0),
+    preco_unitario DECIMAL(10, 2) NOT NULL,
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id),
+    FOREIGN KEY (produto_id) REFERENCES produtos(id)
+);
+
+-- Tabela de pagamentos
+CREATE TABLE pagamentos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    pedido_id INT NOT NULL UNIQUE,
+    metodo ENUM('pix', 'cartao_credito', 'cartao_debito', 'dinheiro') NOT NULL,
+    status ENUM('aguardando', 'aprovado', 'recusado', 'estornado') DEFAULT 'aguardando',
+    valor DECIMAL(10, 2) NOT NULL,
+    pago_em DATETIME,
+    pix_txid VARCHAR(100),
+    pix_qrcode TEXT,
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+);
+
+-- Tabela de avaliações
+CREATE TABLE avaliacoes (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id INT NOT NULL,
+    vendedor_id INT NOT NULL,
+    pedido_id INT NOT NULL UNIQUE,
+    estrelas TINYINT NOT NULL CHECK (estrelas BETWEEN 1 AND 5),
+    comentario TEXT,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (cliente_id) REFERENCES clientes(id),
+    FOREIGN KEY (vendedor_id) REFERENCES vendedores(id),
+    FOREIGN KEY (pedido_id) REFERENCES pedidos(id)
+);
+
+-- Tabela de log de resets de estoque
+CREATE TABLE estoque_resets (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    vendedor_id INT NOT NULL,
+    data_reset DATE NOT NULL,
+    criado_em DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (vendedor_id) REFERENCES vendedores(id)
+);
+
+-- View de estoque (quantidade_restante calculada automaticamente)
+CREATE OR REPLACE VIEW vw_estoque AS
+SELECT
+    p.id,
+    p.vendedor_id,
+    p.nome,
+    p.quantidade_inicial,
+    p.quantidade_vendida,
+    (p.quantidade_inicial - p.quantidade_vendida) AS quantidade_restante,
+    p.alerta_estoque_baixo,
+    p.esgotado,
+    CASE
+        WHEN p.esgotado = 1 THEN 'esgotado'
+        WHEN (p.quantidade_inicial - p.quantidade_vendida) <= p.alerta_estoque_baixo THEN 'baixo'
+        ELSE 'ok'
+    END AS status_estoque
+FROM produtos p;
