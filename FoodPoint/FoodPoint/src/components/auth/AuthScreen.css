@@ -1,0 +1,90 @@
+.auth-page {
+  min-height: 100vh;
+  background: #f4f4f4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 700px;
+  background: white;
+  border-radius: 24px;
+  padding: 40px;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.auth-header h1 {
+  font-size: 40px;
+  margin-bottom: 8px;
+}
+
+.auth-header p {
+  color: #666;
+}
+
+.account-switch,
+.auth-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.account-switch button,
+.auth-tabs button {
+  flex: 1;
+  border: none;
+  padding: 14px;
+  border-radius: 12px;
+  background: #eee;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.account-switch .active,
+.auth-tabs .active {
+  background: #e8471e;
+  color: white;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.auth-form input,
+.auth-form textarea,
+.auth-form select {
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  padding: 14px;
+  font-size: 15px;
+}
+
+.auth-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.auth-form button {
+  border: none;
+  background: #111;
+  color: white;
+  padding: 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.auth-form button:hover {
+  opacity: 0.9;
+}

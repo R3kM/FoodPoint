@@ -1,0 +1,132 @@
+.seller-page {
+  padding: 32px;
+}
+
+.back-button {
+  border: none;
+  background: #111;
+  color: white;
+  padding: 12px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  margin-bottom: 24px;
+}
+
+.seller-banner {
+  height: 260px;
+  border-radius: 24px;
+  overflow: hidden;
+  position: relative;
+}
+
+.seller-banner-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0.9;
+}
+
+.seller-info-card {
+  background: white;
+  margin-top: -60px;
+  position: relative;
+  z-index: 2;
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+.seller-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.seller-name {
+  font-size: 36px;
+  margin-bottom: 12px;
+}
+
+.seller-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.seller-category {
+  background: #f3f4f6;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.verified-badge {
+  background: #dcfce7;
+  color: #166534;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.seller-description {
+  margin-top: 24px;
+  color: #666;
+  line-height: 1.7;
+}
+
+.seller-details {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(220px, 1fr)
+  );
+  gap: 18px;
+}
+
+.seller-detail-item {
+  background: #f8f8f8;
+  padding: 16px;
+  border-radius: 14px;
+}
+
+.seller-actions {
+  margin-top: 28px;
+  display: flex;
+  gap: 16px;
+}
+
+.seller-action-button {
+  background: #e8471e;
+  color: white;
+  text-decoration: none;
+  padding: 12px 18px;
+  border-radius: 12px;
+}
+
+.products-section {
+  margin-top: 48px;
+}
+
+.products-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 28px;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  );
+  gap: 24px;
+}
+
+.empty-products {
+  background: white;
+  padding: 48px;
+  border-radius: 20px;
+  text-align: center;
+}
