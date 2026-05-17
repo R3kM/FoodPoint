@@ -1,0 +1,24 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app > main,
+.app > div:not(.cart-overlay) {
+  flex: 1;
+}
+
+.chat-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  height: calc(100vh - var(--topbar-h));
+  overflow: hidden;
+}
+
+.page-content {
+  max-width: var(--content-max);
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+}

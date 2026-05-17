@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
+:root {
+  --primary: #E84A1E;
+  --primary-hover: #CF3D15;
+  --primary-light: #FFF0EC;
+  --primary-glow: rgba(232, 74, 30, 0.12);
+
+  --bg: #F7F6F3;
+  --surface: #FFFFFF;
+  --surface-2: #F2F0EB;
+  --surface-3: #E8E5DE;
+  --border: #E2DDD5;
+  --border-soft: #EDEBE5;
+
+  --text: #1A1714;
+  --text-2: #4A453F;
+  --text-3: #857D74;
+  --text-inv: #FFFFFF;
+
+  --success: #1A7A4A;
+  --success-bg: #E8F5EE;
+  --warning: #C98300;
+  --warning-bg: #FFF8E6;
+  --danger: #C9291A;
+  --danger-bg: #FDECEA;
+
+  --topbar-h: 72px;
+  --content-max: 1280px;
+
+  --r-xs: 6px;
+  --r-sm: 10px;
+  --r-md: 16px;
+  --r-lg: 24px;
+  --r-xl: 32px;
+  --r-full: 999px;
+
+  --shadow-xs: 0 1px 3px rgba(26,23,20,0.06);
+  --shadow-sm: 0 2px 8px rgba(26,23,20,0.08);
+  --shadow-md: 0 8px 24px rgba(26,23,20,0.10);
+  --shadow-lg: 0 20px 48px rgba(26,23,20,0.14);
+  --shadow-card: 0 2px 12px rgba(26,23,20,0.07), 0 1px 3px rgba(26,23,20,0.05);
+
+  --t-fast: 0.15s ease;
+  --t-base: 0.22s ease;
+  --t-slow: 0.35s cubic-bezier(0.4,0,0.2,1);
+
+  --font-display: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}

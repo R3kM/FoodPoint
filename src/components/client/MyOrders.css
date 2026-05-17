@@ -1,0 +1,176 @@
+.my-orders-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 0 32px 64px;
+}
+
+.back-button {
+  border: none;
+  background: transparent;
+  color: var(--text-3);
+  padding: 16px 0;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: color var(--t-fast);
+  margin-bottom: 8px;
+}
+.back-button:hover { color: var(--text); }
+
+.my-orders-inner {}
+
+.my-orders-header {
+  margin-bottom: 32px;
+}
+.my-orders-header h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.my-orders-header p { font-size: 14px; color: var(--text-3); }
+
+/* Empty */
+.orders-empty {
+  background: var(--surface);
+  border-radius: var(--r-xl);
+  padding: 64px;
+  text-align: center;
+  border: 1.5px dashed var(--border);
+}
+.orders-empty-icon {
+  width: 72px; height: 72px;
+  background: var(--surface-2);
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 20px;
+  color: var(--text-3);
+}
+.orders-empty h3 {
+  font-family: var(--font-display);
+  font-size: 18px; color: var(--text-2); margin-bottom: 6px;
+}
+.orders-empty p { font-size: 14px; color: var(--text-3); }
+
+/* Order list */
+.orders-list { display: flex; flex-direction: column; gap: 16px; }
+
+.order-card-client {
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  padding: 22px 24px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-card);
+}
+
+.order-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+}
+
+.order-card-id {
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+  display: block;
+  margin-bottom: 3px;
+}
+
+.order-card-vendor {
+  font-size: 13px;
+  color: var(--text-3);
+}
+
+.order-status-pill {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 5px 12px;
+  border-radius: var(--r-full);
+  white-space: nowrap;
+}
+
+.order-card-items {
+  border-top: 1px solid var(--border-soft);
+  border-bottom: 1px solid var(--border-soft);
+  padding: 12px 0;
+  margin-bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.order-item-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.order-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.order-card-date { font-size: 12px; color: var(--text-3); }
+
+.order-card-total {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+/* Progress */
+.order-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.order-progress-step {
+  display: flex;
+  align-items: center;
+  flex: 1;
+}
+
+.order-progress-dot {
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 2px solid var(--border);
+  flex-shrink: 0;
+  transition: all var(--t-base);
+}
+.order-progress-dot.done {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.order-progress-line {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  transition: background var(--t-base);
+}
+.order-progress-line.done { background: var(--primary); }
+
+.order-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+}
+.order-progress-labels span {
+  font-size: 10px;
+  color: var(--text-3);
+  text-align: center;
+  flex: 1;
+}
