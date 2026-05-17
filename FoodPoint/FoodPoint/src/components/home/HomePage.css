@@ -1,0 +1,110 @@
+.home-page {
+  padding: 32px;
+}
+
+.hero-section {
+  background: linear-gradient(
+    135deg,
+    #e8471e,
+    #ff7b54
+  );
+  border-radius: 24px;
+  padding: 64px;
+  color: white;
+  margin-bottom: 32px;
+}
+
+.hero-content {
+  max-width: 620px;
+}
+
+.hero-badge {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  margin-bottom: 20px;
+}
+
+.hero-title {
+  font-size: 52px;
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+
+.hero-description {
+  font-size: 18px;
+  line-height: 1.7;
+  opacity: 0.95;
+}
+
+.hero-button {
+  margin-top: 28px;
+  border: none;
+  background: white;
+  color: #e8471e;
+  padding: 14px 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.search-section {
+  margin-bottom: 24px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid #ddd;
+  font-size: 16px;
+}
+
+.filters-section {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 32px;
+}
+
+.filter-button {
+  border: 1px solid #ddd;
+  background: white;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.filter-button.active {
+  background: #e8471e;
+  color: white;
+  border-color: #e8471e;
+}
+
+.seller-section {
+  margin-bottom: 48px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.seller-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(280px, 1fr)
+  );
+  gap: 24px;
+}
+
+.empty-state {
+  background: white;
+  padding: 48px;
+  border-radius: 20px;
+  text-align: center;
+}
