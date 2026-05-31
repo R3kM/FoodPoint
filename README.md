@@ -203,3 +203,6 @@ O `BD.txt` contém o schema completo. Tabelas principais:
 |---------|-----------|
 | `npm run dev` | Inicia o servidor com hot-reload |
 | `npm start` | Inicia o servidor em produção |
+
+**O projeto está 100% funcional, mas ainda há certos problemas como: botões sem funcionalidade, registro de ID incorreta (se perfil excluído, a contagem da ID continua considerando o registro antigo), falta de uma boa responsividade para diferentes telas, falsa verificação de CPF, telefone e email(APIs pagas necessárias). 
+Estes são os problemas atuais conhecidos, pode haver mais questões fora de minha ciência**
