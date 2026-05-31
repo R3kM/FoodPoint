@@ -4,7 +4,6 @@ import ProductManager from "./ProductManager";
 import OrdersPanel    from "./OrdersPanel";
 import MessagesPanel  from "./MessagesPanel";
 import { formatCurrency } from "../../utils/formatters";
-import { getConversations, getMessages } from "../../services/api";
 
 const NAV = [
   { key: "overview",  label: "Visão geral" },
@@ -14,26 +13,21 @@ const NAV = [
 ];
 
 export default function SellerDashboard({
-  seller, products, orders, messages: messagesProp,
+  seller, products, orders,
   onAddProduct, onRemoveProduct, onEditProduct,
   onUpdateProfile, onDeleteAccount, onUpdateOrderStatus,
+  onOrdersCleared, initialTab, onTabChange,
 }) {
-  const [tab, setTab]       = useState("overview");
-  const [messages, setMessages] = useState(messagesProp || []);
-  const totalRevenue = orders.reduce((s, o) => s + o.total, 0);
+  const [tab, setTab] = useState(initialTab || "overview");
 
-  // Busca mensagens do backend quando não estiver em modo mock
   useEffect(() => {
-    if (!seller?.id || import.meta.env.VITE_USE_MOCK !== "false") return;
-    (async () => {
-      const { data: convs } = await getConversations({ vendedor_id: seller.id });
-      if (!convs?.length) return;
-      const allMsgs = await Promise.all(
-        convs.map(c => getMessages(c.id).then(r => r.data || []))
-      );
-      setMessages(allMsgs.flat());
-    })();
-  }, [seller?.id]);
+    if (initialTab) {
+      setTab(initialTab);
+      onTabChange?.();
+    }
+  }, [initialTab]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const totalRevenue = orders.reduce((s, o) => s + Number(o.total || 0), 0);
 
   return (
     <div className="seller-dashboard">
@@ -43,7 +37,6 @@ export default function SellerDashboard({
             {seller?.nome_empresa?.[0]?.toUpperCase() || "V"}
           </div>
           <div className="dashboard-seller-name">{seller?.nome_empresa || "Minha Loja"}</div>
-          <div className="dashboard-seller-plan">Plano {seller?.plano || "gratuito"}</div>
         </div>
 
         <nav className="dashboard-nav">
@@ -55,7 +48,10 @@ export default function SellerDashboard({
             >
               {n.label}
               {n.key === "orders" && orders.length > 0 && (
-                <span style={{ marginLeft:"auto", background:"var(--primary)", color:"white", fontSize:11, fontWeight:700, padding:"2px 7px", borderRadius:"999px" }}>
+                <span style={{
+                  marginLeft: "auto", background: "var(--primary)", color: "white",
+                  fontSize: 11, fontWeight: 700, padding: "2px 7px", borderRadius: "999px",
+                }}>
                   {orders.length}
                 </span>
               )}
@@ -87,19 +83,16 @@ export default function SellerDashboard({
                 <div className="dashboard-stat-label">Receita total</div>
                 <div className="dashboard-stat-value primary">{formatCurrency(totalRevenue)}</div>
               </div>
-              <div className="dashboard-stat-card">
-                <div className="dashboard-stat-label">Mensagens</div>
-                <div className="dashboard-stat-value">{messages.length}</div>
-              </div>
             </div>
 
             <div className="dashboard-card">
               <div className="dashboard-card-header">
                 <h2 className="dashboard-card-title">Ações rápidas</h2>
               </div>
-              <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button className="btn-primary" onClick={() => setTab("products")}>Novo produto</button>
                 <button className="btn-secondary" onClick={() => setTab("orders")}>Ver pedidos</button>
+                <button className="btn-secondary" onClick={() => setTab("messages")}>Ver mensagens</button>
               </div>
             </div>
           </>
@@ -115,10 +108,18 @@ export default function SellerDashboard({
         )}
 
         {tab === "orders" && (
-          <OrdersPanel orders={orders} onUpdateOrderStatus={onUpdateOrderStatus} />
+          <OrdersPanel
+            orders={orders}
+            seller={seller}
+            onUpdateOrderStatus={onUpdateOrderStatus}
+            onOrdersCleared={onOrdersCleared}
+          />
         )}
 
-        {tab === "messages" && <MessagesPanel messages={messages} />}
+        {/* Passa o objeto seller completo para o MessagesPanel buscar as conversas */}
+        {tab === "messages" && (
+          <MessagesPanel seller={seller} />
+        )}
       </main>
     </div>
   );

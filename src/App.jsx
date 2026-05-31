@@ -16,12 +16,12 @@ import { useAuth } from "./hooks/useAuth";
 import { useCart } from "./hooks/useCart";
 import { useOrders } from "./hooks/useOrders";
 import { useProducts } from "./hooks/useProducts";
-import { createOrder, updateOrderStatus } from "./services/api";
+import { createOrder, updateOrderStatus, getSellerById, deleteAccount } from "./services/api";
 
 export default function App() {
   const { user, loading: authLoading, login, register, logout, updateUser } = useAuth();
   const { cart, addItem, updateQty, clear: clearCart, totalItems } = useCart();
-  const { orders, addOrder, updateStatus } = useOrders(user);
+  const { orders, addOrder, updateStatus, refetch: refetchOrders } = useOrders(user);
   const { products, addProduct, editProduct, removeProduct } = useProducts(
     user?.tipo === "seller" ? user.id : null
   );
@@ -31,6 +31,7 @@ export default function App() {
   const [cartOpen,       setCartOpen]       = useState(false);
   const [profileOpen,    setProfileOpen]    = useState(false);
   const [toast,          setToast]          = useState(null);
+  const [sellerDashboardTab, setSellerDashboardTab] = useState(null);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -41,6 +42,7 @@ export default function App() {
   const handleLogin = useCallback(async (credentials) => {
     const u = await login(credentials);
     if (u) setPage(u.tipo === "seller" ? "seller-dashboard" : "home");
+    return u; // null se falhou — AuthScreen usa isso para exibir "Crie uma conta"
   }, [login]);
 
   const handleRegister = useCallback(async (formData) => {
@@ -56,12 +58,19 @@ export default function App() {
 
   // ── Navegação ──────────────────────────────────────────────────────────────
   const handleNav = useCallback((target) => {
-    setPage(target);
+    if (target === "seller-messages") {
+      setPage("seller-dashboard");
+      setSellerDashboardTab("messages");
+    } else {
+      setPage(target);
+    }
     setCartOpen(false);
   }, []);
 
-  const handleSellerSelect = useCallback((seller) => {
-    setSelectedSeller(seller);
+  const handleSellerSelect = useCallback(async (seller) => {
+    // Busca dados completos do vendedor (descrição, horários, etc.)
+    const { data } = await getSellerById(seller.id);
+    setSelectedSeller(data || seller);
     setPage("seller");
   }, []);
 
@@ -132,15 +141,27 @@ export default function App() {
     showToast("Perfil atualizado!");
   }, [updateUser, showToast]);
 
-  const handleDeleteAccount = useCallback(() => {
+  const handleDeleteAccount = useCallback(async () => {
+    if (user?.id) {
+      await deleteAccount(user.id, user.tipo);
+    }
     handleLogout();
     showToast("Conta encerrada.");
-  }, [handleLogout, showToast]);
+  }, [user, handleLogout, showToast]);
 
   // ── Produtos (vendedor) ────────────────────────────────────────────────────
-  const handleAddProduct    = useCallback((p) => { addProduct(p);    showToast("Produto adicionado!");  }, [addProduct,    showToast]);
-  const handleEditProduct   = useCallback((p) => { editProduct(p);   showToast("Produto atualizado!"); }, [editProduct,   showToast]);
-  const handleRemoveProduct = useCallback((id) => { removeProduct(id); showToast("Produto removido."); }, [removeProduct, showToast]);
+  const handleAddProduct    = useCallback(async (p) => {
+    const result = await addProduct(p);
+    if (!result?.error) showToast("Produto adicionado!");
+    return result;
+  }, [addProduct, showToast]);
+
+  const handleEditProduct   = useCallback(async (p) => {
+    const result = await editProduct(p);
+    if (!result?.error) showToast("Produto atualizado!");
+    return result;
+  }, [editProduct, showToast]);
+  const handleRemoveProduct = useCallback(async (id) => { const result = await removeProduct(id); if (!result?.error) showToast("Produto removido."); else showToast("Erro ao remover produto."); }, [removeProduct, showToast]);
 
   // ── Renderização ───────────────────────────────────────────────────────────
   const isSeller  = user?.tipo === "seller";
@@ -208,12 +229,15 @@ export default function App() {
             products={products}
             orders={orders}
             messages={[]}
+            initialTab={sellerDashboardTab}
+            onTabChange={() => setSellerDashboardTab(null)}
             onAddProduct={handleAddProduct}
             onEditProduct={handleEditProduct}
             onRemoveProduct={handleRemoveProduct}
             onUpdateProfile={handleUpdateProfile}
             onDeleteAccount={handleDeleteAccount}
             onUpdateOrderStatus={handleUpdateOrderStatus}
+            onOrdersCleared={refetchOrders}
           />
         )}
       </div>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { formatCurrency } from "../../utils/formatters";
+import { clearOldOrders } from "../../services/api";
 
 const STATUSES = [
   { key: "pendente",        label: "Pendente" },
@@ -30,9 +31,12 @@ const FILTER_OPTIONS = [
 
 const PAGE_SIZE = 10;
 
-export default function OrdersPanel({ orders, onUpdateOrderStatus }) {
-  const [filter,   setFilter]   = useState("todos");
-  const [page,     setPage]     = useState(1);
+export default function OrdersPanel({ orders, seller, onUpdateOrderStatus, onOrdersCleared }) {
+  const [filter,        setFilter]        = useState("todos");
+  const [page,          setPage]          = useState(1);
+  const [confirmClear,  setConfirmClear]  = useState(false);
+  const [clearing,      setClearing]      = useState(false);
+  const [clearMsg,      setClearMsg]      = useState("");
 
   const filtered = [...orders]
     .reverse()
@@ -43,12 +47,86 @@ export default function OrdersPanel({ orders, onUpdateOrderStatus }) {
 
   const handleFilter = (key) => { setFilter(key); setPage(1); };
 
+  const completedCount = orders.filter(o =>
+    o.status === "entregue" || o.status === "cancelado"
+  ).length;
+
+  const handleClear = async () => {
+    setClearing(true);
+    const { data, error } = await clearOldOrders(seller?.id);
+    setClearing(false);
+    setConfirmClear(false);
+    if (error) {
+      setClearMsg("Erro ao limpar pedidos.");
+    } else {
+      setClearMsg(`${data?.deleted ?? completedCount} pedido(s) removido(s).`);
+      onOrdersCleared?.();
+      setTimeout(() => setClearMsg(""), 3000);
+    }
+  };
+
   return (
     <div>
       <div className="dashboard-page-header">
-        <h1 className="dashboard-page-title">Pedidos</h1>
-        <p className="dashboard-page-sub">Gerencie e atualize o status dos pedidos recebidos.</p>
+        <div>
+          <h1 className="dashboard-page-title">Pedidos</h1>
+          <p className="dashboard-page-sub">Gerencie e atualize o status dos pedidos recebidos.</p>
+        </div>
+
+        {/* Botão de limpeza */}
+        {completedCount > 0 && !confirmClear && (
+          <button
+            onClick={() => setConfirmClear(true)}
+            style={{
+              padding: "8px 16px", borderRadius: "var(--r-sm)", fontSize: 13,
+              fontWeight: 600, border: "1.5px solid var(--border)",
+              background: "var(--surface)", color: "var(--text-2)",
+              cursor: "pointer", display: "flex", alignItems: "center", gap: 6,
+              whiteSpace: "nowrap",
+            }}
+          >
+            🗑 Limpar concluídos ({completedCount})
+          </button>
+        )}
+
+        {/* Confirmação de limpeza */}
+        {confirmClear && (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap",
+            background: "var(--surface-2)", border: "1.5px solid var(--border)",
+            borderRadius: "var(--r-sm)", padding: "10px 14px",
+          }}>
+            <span style={{ fontSize: 13, color: "var(--text-2)", fontWeight: 600 }}>
+              Remover {completedCount} pedido(s) retirado(s) e cancelado(s)?
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => setConfirmClear(false)}
+                style={{ padding: "5px 14px", borderRadius: "var(--r-sm)", fontSize: 13,
+                  border: "1.5px solid var(--border)", background: "var(--surface)",
+                  color: "var(--text-2)", cursor: "pointer" }}>
+                Cancelar
+              </button>
+              <button onClick={handleClear} disabled={clearing}
+                style={{ padding: "5px 14px", borderRadius: "var(--r-sm)", fontSize: 13,
+                  border: "none", background: "var(--danger)", color: "#fff",
+                  cursor: clearing ? "not-allowed" : "pointer", fontWeight: 600,
+                  opacity: clearing ? 0.6 : 1 }}>
+                {clearing ? "Removendo…" : "Confirmar"}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
+
+      {clearMsg && (
+        <div style={{
+          background: "var(--success-bg, #E8F5EE)", color: "var(--success, #1A7A4A)",
+          border: "1px solid currentColor", borderRadius: "var(--r-sm)",
+          padding: "10px 16px", fontSize: 13, fontWeight: 600, marginBottom: 16,
+        }}>
+          ✓ {clearMsg}
+        </div>
+      )}
 
       <div className="dashboard-card">
         <div className="dashboard-card-header">
@@ -98,10 +176,13 @@ export default function OrdersPanel({ orders, onUpdateOrderStatus }) {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {paginated.map(order => {
                 const st = STATUS_STYLE[order.status] || STATUS_STYLE.pendente;
+                const isFinished = order.status === "entregue" || order.status === "cancelado";
                 return (
                   <div key={order.id} style={{
                     border: "1.5px solid var(--border-soft)",
                     borderRadius: "var(--r-md)", padding: "16px 18px",
+                    opacity: isFinished ? 0.75 : 1,
+                    transition: "opacity 0.2s",
                   }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                       <div>
@@ -175,7 +256,6 @@ export default function OrdersPanel({ orders, onUpdateOrderStatus }) {
               })}
             </div>
 
-            {/* Paginação */}
             {totalPages > 1 && (
               <div style={{ display: "flex", justifyContent: "center", gap: 8, marginTop: 20 }}>
                 <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}

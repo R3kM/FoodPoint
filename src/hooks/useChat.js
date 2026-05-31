@@ -10,7 +10,7 @@
  */
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { getOrCreateConversation, getMessages, sendMessage } from "../services/api";
+import { getOrCreateConversation, getMessages, sendMessage, markMessagesRead } from "../services/api";
 
 export function useChat({ clienteId, vendedorId }) {
   const [conversaId, setConversaId] = useState(null);
@@ -38,7 +38,17 @@ export function useChat({ clienteId, vendedorId }) {
 
     async function load() {
       const { data } = await getMessages(conversaId);
-      if (data) setMessages(data);
+      if (data) {
+        setMessages(data);
+        // Marca mensagens do vendedor como lidas pelo cliente
+        const naoLidas = data.filter(m => m.remetente_tipo === "vendedor" && !m.lida);
+        if (naoLidas.length) {
+          await markMessagesRead(conversaId, "cliente");
+          setMessages(prev => prev.map(m =>
+            m.remetente_tipo === "vendedor" ? { ...m, lida: 1 } : m
+          ));
+        }
+      }
     }
 
     load();

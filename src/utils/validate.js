@@ -3,8 +3,6 @@
  * Objeto vazio = formulário válido.
  */
 
-// ─── CPF / CNPJ ──────────────────────────────────────────────────────────────
-
 function stripMask(v) {
   return (v || "").replace(/\D/g, "");
 }
@@ -45,7 +43,17 @@ function validateTelefone(v) {
   return digits.length >= 10 && digits.length <= 13;
 }
 
-// ─── Formulários ─────────────────────────────────────────────────────────────
+// ── Validação de senha forte ──────────────────────────────────────────────────
+// Retorna mensagem de erro ou null se válida
+function validateSenhaForte(senha) {
+  if (!senha?.trim())        return "Senha é obrigatória.";
+  if (senha.length < 8)      return "Senha deve ter ao menos 8 caracteres.";
+  if (!/[A-Z]/.test(senha))  return "Inclua ao menos uma letra maiúscula.";
+  if (!/[0-9]/.test(senha))  return "Inclua ao menos um número.";
+  return null;
+}
+
+// ── Formulários ───────────────────────────────────────────────────────────────
 
 export function validateClientRegister(data) {
   const e = {};
@@ -58,11 +66,13 @@ export function validateClientRegister(data) {
   if (!data.telefone?.trim()) e.telefone = "Telefone é obrigatório.";
   else if (!validateTelefone(data.telefone)) e.telefone = "Telefone inválido (mínimo 10 dígitos).";
 
-  if (data.cpf?.trim() && !validateCPF(data.cpf))
+  if (!data.cpf?.trim())
+    e.cpf = "CPF é obrigatório.";
+  else if (!validateCPF(data.cpf))
     e.cpf = "CPF inválido.";
 
-  if (!data.senha?.trim())          e.senha = "Senha é obrigatória.";
-  else if (data.senha.length < 6)   e.senha = "Senha deve ter ao menos 6 caracteres.";
+  const senhaErr = validateSenhaForte(data.senha);
+  if (senhaErr) e.senha = senhaErr;
 
   if (!data.confirma_senha?.trim()) e.confirma_senha = "Confirme sua senha.";
   else if (data.senha !== data.confirma_senha) e.confirma_senha = "As senhas não conferem.";
@@ -82,20 +92,20 @@ export function validateSellerRegister(data) {
   if (!data.telefone?.trim())         e.telefone = "Telefone é obrigatório.";
   else if (!validateTelefone(data.telefone)) e.telefone = "Telefone inválido (mínimo 10 dígitos).";
 
-  if (data.cpf_cnpj?.trim()) {
+  if (!data.cpf_cnpj?.trim()) {
+    e.cpf_cnpj = `${data.tipo_documento} é obrigatório.`;
+  } else {
     const digits = stripMask(data.cpf_cnpj);
-    if (data.tipo_documento === "CPF" && !validateCPF(digits))
-      e.cpf_cnpj = "CPF inválido.";
-    if (data.tipo_documento === "CNPJ" && !validateCNPJ(digits))
-      e.cpf_cnpj = "CNPJ inválido.";
+    if (data.tipo_documento === "CPF"  && !validateCPF(digits))  e.cpf_cnpj = "CPF inválido.";
+    if (data.tipo_documento === "CNPJ" && !validateCNPJ(digits)) e.cpf_cnpj = "CNPJ inválido.";
   }
 
   if (!data.bairro?.trim()) e.bairro = "Bairro é obrigatório.";
   if (!data.cidade?.trim()) e.cidade = "Cidade é obrigatória.";
   if (!data.uf?.trim())     e.uf     = "UF é obrigatório.";
 
-  if (!data.senha?.trim())          e.senha = "Senha é obrigatória.";
-  else if (data.senha.length < 6)   e.senha = "Senha deve ter ao menos 6 caracteres.";
+  const senhaErr = validateSenhaForte(data.senha);
+  if (senhaErr) e.senha = senhaErr;
 
   if (!data.confirma_senha?.trim()) e.confirma_senha = "Confirme sua senha.";
   else if (data.senha !== data.confirma_senha) e.confirma_senha = "As senhas não conferem.";

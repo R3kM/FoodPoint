@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import FieldError from "../common/FieldError";
 import { validateProduct, hasErrors } from "../../utils/validate";
+import { uploadProductImage } from "../../services/api";
 
 const TIPOS_NEGOCIO = [
   { value: "salgados",   label: "Salgados" },
@@ -13,16 +14,27 @@ const TIPOS_NEGOCIO = [
   { value: "outro",      label: "Outro" },
 ];
 
-// Valida URL de imagem — só aceita HTTPS externo ou base64 local
 function isSafeImageUrl(url) {
   if (!url) return false;
   if (url.startsWith("data:image/")) return true;
+  if (url.startsWith("/uploads/"))   return true;
   try {
     const u = new URL(url);
     return u.protocol === "https:";
   } catch {
     return false;
   }
+}
+
+function resolveImageUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("/uploads/")) {
+    // VITE_API_URL = "http://localhost:3001/api" → base = "http://localhost:3001"
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+    const base = apiUrl.replace(/\/api\/?$/, "");
+    return `${base}${url}`;
+  }
+  return url;
 }
 
 export default function ProductForm({ editingProduct, onAddProduct, onEditProduct, onClose }) {
@@ -35,10 +47,13 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           horario_disponivel: "", imagem_url: "",
         }
   );
-  const [preview,   setPreview]   = useState(editingProduct?.imagem_url || "");
+  const [preview,   setPreview]   = useState(resolveImageUrl(editingProduct?.imagem_url || ""));
   const [imageErr,  setImageErr]  = useState("");
   const [errors,    setErrors]    = useState({});
-  const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [submitErr, setSubmitErr] = useState("");
+  const pendingFileRef = useRef(null);
+  const fileRef        = useRef(null);
 
   const set = (k, v) => { setForm(p => ({ ...p, [k]: v })); setErrors(p => ({ ...p, [k]: "" })); };
 
@@ -46,15 +61,18 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
     const file = e.target.files[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) { setImageErr("Arquivo inválido. Use JPG, PNG ou WEBP."); return; }
-    if (file.size > 5 * 1024 * 1024) { setImageErr("Imagem deve ter no máximo 5 MB."); return; }
+    if (file.size > 5 * 1024 * 1024)    { setImageErr("Imagem deve ter no máximo 5 MB."); return; }
     setImageErr("");
+    pendingFileRef.current = file;
     const reader = new FileReader();
-    reader.onload = (ev) => { setPreview(ev.target.result); set("imagem_url", ev.target.result); };
+    reader.onload = (ev) => { setPreview(ev.target.result); };
     reader.readAsDataURL(file);
+    set("imagem_url", "__pending__");
   };
 
   const handleUrlChange = (e) => {
     const url = e.target.value;
+    pendingFileRef.current = null;
     set("imagem_url", url);
     if (url && !isSafeImageUrl(url)) {
       setImageErr("Use uma URL HTTPS válida.");
@@ -65,31 +83,47 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setSubmitErr("");
     const data = {
       ...form,
       preco:                parseFloat(form.preco) || 0,
       quantidade_inicial:   parseInt(form.quantidade_inicial) || 0,
       alerta_estoque_baixo: parseInt(form.alerta_estoque_baixo) || 0,
-      // Garantir que imagem_url vazia vira null
-      imagem_url: form.imagem_url?.trim() || null,
+      imagem_url: form.imagem_url === "__pending__" ? null : (form.imagem_url?.trim() || null),
     };
     const errs = validateProduct(data);
     if (hasErrors(errs)) { setErrors(errs); return; }
 
+    if (pendingFileRef.current) {
+      setUploading(true);
+      const { data: uploaded, error: upErr } = await uploadProductImage(pendingFileRef.current);
+      setUploading(false);
+      if (upErr) { setImageErr(`Erro no upload: ${upErr}`); return; }
+      data.imagem_url = uploaded.url;
+    }
+
+    let result;
     if (editingProduct) {
-      onEditProduct(data);
+      result = await onEditProduct(data);
     } else {
-      onAddProduct({
+      result = await onAddProduct({
         ...data,
-        id:                Date.now(),
-        ativo:             1,
-        esgotado:          0,
+        id:                 Date.now(),
+        ativo:              1,
+        esgotado:           0,
         quantidade_vendida: 0,
       });
     }
+
+    if (result?.error) {
+      setSubmitErr(`Erro ao salvar: ${result.error}`);
+      return;
+    }
     onClose?.();
   };
+
+  const previewSrc = preview && isSafeImageUrl(preview) ? preview : null;
 
   return (
     <div className="product-form">
@@ -98,7 +132,6 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
       </div>
 
       <div className="product-form-grid">
-        {/* Nome */}
         <div className="form-field" style={{ gridColumn: "1/-1" }}>
           <label>Nome do produto *</label>
           <input type="text" placeholder="Ex: Marmita Fitness" value={form.nome}
@@ -108,7 +141,6 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           <FieldError msg={errors.nome} />
         </div>
 
-        {/* Preço */}
         <div className="form-field">
           <label>Preço (R$) *</label>
           <input type="number" step="0.01" min="0" placeholder="0,00" value={form.preco}
@@ -118,7 +150,6 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           <FieldError msg={errors.preco} />
         </div>
 
-        {/* Categoria */}
         <div className="form-field">
           <label>Categoria</label>
           <select value={form.categoria_id || ""} onChange={e => set("categoria_id", e.target.value || null)}>
@@ -129,7 +160,6 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           </select>
         </div>
 
-        {/* Estoque inicial */}
         <div className="form-field">
           <label>Estoque inicial</label>
           <input type="number" min="0" placeholder="0" value={form.quantidade_inicial}
@@ -139,7 +169,6 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           </span>
         </div>
 
-        {/* Alerta de estoque baixo */}
         <div className="form-field">
           <label>Alerta de estoque baixo</label>
           <input type="number" min="0" placeholder="3" value={form.alerta_estoque_baixo}
@@ -149,14 +178,12 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           </span>
         </div>
 
-        {/* Horário disponível */}
         <div className="form-field">
           <label>Horário disponível</label>
           <input type="text" placeholder="Ex: 11:00-20:00" value={form.horario_disponivel || ""}
             onChange={e => set("horario_disponivel", e.target.value)} />
         </div>
 
-        {/* Descrição */}
         <div className="form-field" style={{ gridColumn: "1/-1" }}>
           <label>Descrição *</label>
           <textarea placeholder="Descreva ingredientes, porção, etc." value={form.descricao}
@@ -167,15 +194,14 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           <FieldError msg={errors.descricao} />
         </div>
 
-        {/* Imagem */}
         <div className="form-field" style={{ gridColumn: "1/-1" }}>
           <label>Imagem do produto</label>
           <div className="product-image-upload" onClick={() => fileRef.current?.click()}
             role="button" aria-label="Selecionar imagem do produto" tabIndex={0}
             onKeyDown={e => e.key === "Enter" && fileRef.current?.click()}>
-            {preview && isSafeImageUrl(preview) ? (
+            {previewSrc ? (
               <>
-                <img src={preview} alt="preview" className="product-image-preview" />
+                <img src={previewSrc} alt="preview" className="product-image-preview" />
                 <p style={{ fontSize: 12, color: "var(--text-3)", marginTop: 8 }}>Clique para trocar</p>
               </>
             ) : (
@@ -195,7 +221,7 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp"
             style={{ display: "none" }} onChange={handleImageFile} aria-hidden="true" />
           <input type="url" placeholder="Ou cole uma URL HTTPS da imagem"
-            value={form.imagem_url?.startsWith("data:") ? "" : (form.imagem_url || "")}
+            value={form.imagem_url === "__pending__" || form.imagem_url?.startsWith("data:") ? "" : (form.imagem_url || "")}
             onChange={handleUrlChange}
             style={{ marginTop: 8, fontSize: 13 }}
             aria-label="URL da imagem (HTTPS)" />
@@ -203,12 +229,16 @@ export default function ProductForm({ editingProduct, onAddProduct, onEditProduc
         </div>
       </div>
 
+      {submitErr && (
+        <p style={{ fontSize: 13, color: "var(--danger)", marginTop: 8, textAlign: "center" }}>{submitErr}</p>
+      )}
+
       <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 4 }}>
         {onClose && (
           <button type="button" className="btn-secondary" onClick={onClose}>Cancelar</button>
         )}
-        <button type="button" className="btn-primary" onClick={handleSubmit}>
-          {editingProduct ? "Salvar alterações" : "Criar produto"}
+        <button type="button" className="btn-primary" onClick={handleSubmit} disabled={uploading}>
+          {uploading ? "Enviando imagem…" : editingProduct ? "Salvar alterações" : "Criar produto"}
         </button>
       </div>
     </div>

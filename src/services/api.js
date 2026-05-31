@@ -31,8 +31,10 @@ async function request(method, path, body = null) {
 
     const res = await fetch(`${BASE_URL}${path}`, options);
 
-    // Sessão expirada — limpa token e recarrega
-    if (res.status === 401) {
+    // Sessão expirada — só recarrega se NÃO for uma rota de login/registro
+    // (login retorna 401 quando as credenciais são inválidas — não é sessão expirada)
+    const isAuthRoute = path.startsWith("/auth/login") || path.startsWith("/auth/register");
+    if (res.status === 401 && !isAuthRoute) {
       sessionStorage.removeItem("fp_token");
       sessionStorage.removeItem("fp_user");
       window.location.reload();
@@ -117,8 +119,12 @@ export async function getSellerById(id) {
 }
 
 export async function updateSeller(id, data) {
-  if (USE_MOCK) return { data: { id, ...data }, error: null };
-  return put(`/vendedores/${id}`, data);
+  // Remove campos protegidos antes de enviar
+  const { senha, password, criado_em, estrelas, num_avaliacoes,
+          total_vendas, verificado, plano, destaque, tipo,
+          cpf_cnpj, tipo_documento, ...payload } = data;
+  if (USE_MOCK) return { data: { id, ...payload }, error: null };
+  return put(`/vendedores/${id}`, payload);
 }
 
 // ─── Produtos ─────────────────────────────────────────────────────────────────
@@ -142,14 +148,49 @@ export async function getProducts({ vendedor_id } = {}) {
   return get(`/produtos?${params}`);
 }
 
+export async function uploadProductImage(file) {
+  if (USE_MOCK) {
+    // Em mock, converte para base64 localmente
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve({ data: { url: e.target.result }, error: null });
+      reader.onerror = () => resolve({ data: null, error: 'Erro ao ler arquivo.' });
+      reader.readAsDataURL(file);
+    });
+  }
+  const formData = new FormData();
+  formData.append('imagem', file);
+  try {
+    const res = await fetch(`${BASE_URL}/produtos/upload-imagem`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('fp_token')}` },
+      body: formData,
+    });
+    const json = await res.json();
+    if (!res.ok) return { data: null, error: json.message || 'Erro no upload.' };
+    return { data: json, error: null };
+  } catch {
+    return { data: null, error: 'Sem conexão com o servidor.' };
+  }
+}
+
 export async function createProduct(data) {
-  if (USE_MOCK) return { data: { id: Date.now(), ativo: 1, esgotado: 0, quantidade_vendida: 0, ...data }, error: null };
-  return post("/produtos", data);
+  const { id, ativo, esgotado, quantidade_vendida, estoque_atual, ...payload } = data;
+  if (USE_MOCK) return { data: { id: Date.now(), ativo: 1, esgotado: 0, quantidade_vendida: 0, ...payload }, error: null };
+  return post('/produtos', payload);
 }
 
 export async function updateProduct(id, data) {
-  if (USE_MOCK) return { data: { id, ...data }, error: null };
-  return put(`/produtos/${id}`, data);
+  const { id: _id, vendedor_id, criado_em, quantidade_vendida, esgotado,
+          estoque_atual, quantidade_restante, status_estoque,
+          nome_empresa, nome_categoria, ...payload } = data;
+  if (USE_MOCK) return { data: { id, ...payload }, error: null };
+  return put(`/produtos/${id}`, payload);
+}
+
+export async function clearOldOrders(vendedor_id, status = 'entregue,cancelado') {
+  if (USE_MOCK) return { data: { deleted: 0 }, error: null };
+  return del(`/pedidos/limpar?vendedor_id=${vendedor_id}&status=${status}`);
 }
 
 export async function deleteProduct(id) {
@@ -223,6 +264,19 @@ export async function sendMessage(data) {
 export async function getMessages(conversa_id) {
   if (USE_MOCK) return { data: [], error: null };
   return get(`/conversas/${conversa_id}/mensagens`);
+}
+
+export async function markMessagesRead(conversa_id, lido_por) {
+  if (USE_MOCK) return { data: { success: true }, error: null };
+  return put(`/mensagens/lidas`, { conversa_id, lido_por });
+}
+
+// ─── Exclusão de conta ────────────────────────────────────────────────────────
+// DELETE /auth/account  { id, tipo }
+
+export async function deleteAccount(id, tipo) {
+  if (USE_MOCK) return { data: { success: true }, error: null };
+  return request("DELETE", "/auth/account", { id, tipo });
 }
 
 // ─── Avaliações ───────────────────────────────────────────────────────────────

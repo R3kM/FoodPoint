@@ -10,14 +10,19 @@ function getEstoqueStatus(product) {
 }
 
 // Valida URL de imagem para evitar XSS / conteúdo não confiável
-function isSafeImageUrl(url) {
-  if (!url) return false;
-  if (url.startsWith("data:image/")) return true; // base64 do upload local
+function resolveImageUrl(url) {
+  if (!url) return null;
+  if (url.startsWith("data:image/")) return url;
+  if (url.startsWith("/uploads/")) {
+    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
+    const base = apiUrl.replace(/\/api\/?$/, "");
+    return `${base}${url}`;
+  }
   try {
     const u = new URL(url);
-    return u.protocol === "https:"; // só HTTPS externo
+    return u.protocol === "https:" ? url : null;
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -30,8 +35,8 @@ export default function ProductCard({ product, onAdd }) {
   return (
     <div className={`product-card ${esgotado ? "product-card--esgotado" : ""}`}>
       <div className="product-image-placeholder">
-        {isSafeImageUrl(product.imagem_url)
-          ? <img src={product.imagem_url} alt={product.nome} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        {resolveImageUrl(product.imagem_url)
+          ? <img src={resolveImageUrl(product.imagem_url)} alt={product.nome} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
           : <span style={{ fontSize: 13, color: "var(--text-3)" }}>Sem imagem</span>
         }
         {esgotado && (

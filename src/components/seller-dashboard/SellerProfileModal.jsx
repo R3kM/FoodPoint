@@ -25,7 +25,13 @@ const DIAS = ["seg","ter","qua","qui","sex","sab","dom"];
 const DIA_LABEL = { seg:"Seg",ter:"Ter",qua:"Qua",qui:"Qui",sex:"Sex",sab:"Sáb",dom:"Dom" };
 
 export default function SellerProfileModal({ seller, onSave, onDelete, onClose }) {
-  const [form,          setForm]    = useState({ ...seller });
+  const [form, setForm] = useState(() => {
+    const s = { ...seller };
+    if (typeof s.horario_funcionamento === 'string') {
+      try { s.horario_funcionamento = JSON.parse(s.horario_funcionamento); } catch { s.horario_funcionamento = {}; }
+    }
+    return s;
+  });
   const [errors,        setErrors]  = useState({});
   const [confirmDelete, setConfirm] = useState(false);
 
@@ -41,9 +47,13 @@ export default function SellerProfileModal({ seller, onSave, onDelete, onClose }
   const handleSave = async () => {
     const errs = validate(form);
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    // Sincroniza com o backend (silencioso em modo mock)
-    await updateSeller(form.id, form);
-    onSave(form);
+    const { data, error } = await updateSeller(form.id, form);
+    if (error) {
+      setErrors({ _geral: "Erro ao salvar. Tente novamente." });
+      return;
+    }
+    // Usa o dado retornado pelo banco (inclui horario_funcionamento parseado)
+    onSave(data || form);
   };
 
   return (
@@ -213,6 +223,9 @@ export default function SellerProfileModal({ seller, onSave, onDelete, onClose }
         </div>
 
         <div className="modal-footer">
+          {errors._geral && (
+            <p style={{ fontSize: 13, color: "var(--danger)", gridColumn: "1/-1" }}>{errors._geral}</p>
+          )}
           {!confirmDelete ? (
             <>
               <button className="btn-danger-soft" onClick={() => setConfirm(true)}>Excluir conta</button>
